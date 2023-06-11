@@ -112,6 +112,7 @@ Node *new_node_num(int val) {
 }
 
 Node *mul();
+Node *unary();
 Node *primary();
 
 // expr = mul ("+" mul | "-" mul)*
@@ -128,18 +129,28 @@ Node *expr() {
   }
 }
 
-// mul = primary ("*" primary | "/" primary)*
+// mul = unary ("*" unary | "/" unary)*
 Node *mul() {
-  Node *node = primary();
+  Node *node = unary();
 
   for (;;) {
     if (consume('*'))       // primary ("*" primary)*
-      node = new_node(ND_MUL, node, primary());
+      node = new_node(ND_MUL, node, unary());
     else if (consume('/'))  // primary ("/" primary)*
-      node = new_node(ND_DIV, node, primary());
+      node = new_node(ND_DIV, node, unary());
     else                    // primary
       return node;
   }
+}
+
+// unary = ("+" | "-")? primary
+Node *unary() {
+  if (consume('+'))                                       // unary = "+" primary
+    return primary();
+  else if (consume('-')) {
+    return new_node(ND_SUB, new_node_num(0), primary());  // unary = "-" primary
+  }
+  return primary();                                       // unary = primary
 }
 
 // primary = num | "(" expr ")"
@@ -150,8 +161,7 @@ Node *primary() {
     return node;
   }
 
-  // primary = num
-  return new_node_num(expect_number());
+  return new_node_num(expect_number()); // primary = num
 }
 
 Token *tokenize() {
